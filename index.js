@@ -1,6 +1,6 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
-const cors = require("cors");
+const cors = require = require("cors");
 
 const app = express();
 app.use(cors());
@@ -13,7 +13,7 @@ const db = mysql.createPool({ 
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME, // Assuming this is 'productdb'
     port: process.env.DATABASE_PORT,
-    // 👇 यहाँ FIX किया गया है: SSL को स्थिर करने के लिए minVersion जोड़ा गया
+    // SSL Fix for TiDB Cloud latency
     ssl: {  
         rejectUnauthorized: true,
         minVersion: 'TLSv1.2' 
@@ -41,16 +41,17 @@ async function startServer() {
     } catch (err) {
         console.error("❌ FATAL ERROR: Database connection failed. Server will not start.", err.message);
         console.error("DEBUG: Check Environment Variables and TiDB IP Access List.");
-        process.exit(1); // क्रिटिकल एरर पर सर्वर बंद करें
+        process.exit(1); 
     }
 }
-startServer(); // सर्वर शुरू करें
+startServer();
 
 // ------------------ END OF DATABASE CONNECTION & SERVER START ------------------
 
 // ========================
-// PRODUCT APIs (dashboard table)
+// PRODUCT APIs (dashboard table) - (Unchanged)
 // ========================
+// ... (Your Product APIs remain here) ...
 
 // GET all products
 app.get("/products", async (req, res) => {
@@ -116,7 +117,7 @@ app.delete("/products/:id", async (req, res) => {
 // SIGNUP / SIGNIN APIs (singup table)
 // ========================
 
-// SIGNUP
+// SIGNUP (Unchanged)
 app.post("/signup", async (req, res) => {
     const { name, email, phone, password, Confirm_Password } = req.body;
     if (password !== Confirm_Password) {
@@ -136,7 +137,7 @@ app.post("/signup", async (req, res) => {
     }
 });
 
-// SIGNIN
+// SIGNIN (Old - Unchanged)
 app.post("/signin", async (req, res) => {
     const { email, password } = req.body;
     const sql = "SELECT * FROM singup WHERE gmail = ? AND password = ?";
@@ -145,25 +146,49 @@ app.post("/signin", async (req, res) => {
         const [result] = await db.query(sql, [email, password]); 
         
         if (result.length > 0) {
-            // Login Successful
             res.json({
                 message: "Login Successful! Redirecting to Admin Page",
                 admin: result[0]
             });
         } else {
-            // Login Failed (Invalid credentials)
             res.status(401).json({ message: "Invalid email or password" }); 
         }
     } catch (err) {
         console.error("Signin error:", err);
-        // 500 Internal Server Error (डेटाबेस समस्या या अन्य गंभीर त्रुटि)
+        return res.status(500).json({ message: "Login Error: Internal Server Failure." });
+    }
+});
+
+// ========================
+// 🆕 NEW SIGNIN API (singin_admin table)
+// ========================
+
+app.post("/signin-admin", async (req, res) => {
+    const { email, password } = req.body;
+    // इस API में हम नया टेबल 'singin_admin' का उपयोग कर रहे हैं
+    const sql = "SELECT * FROM singin_admin WHERE gmail = ? AND password = ?";
+    
+    try {
+        const [result] = await db.query(sql, [email, password]); 
+        
+        if (result.length > 0) {
+            res.json({
+                message: "Admin Login Successful!",
+                admin: result[0]
+            });
+        } else {
+            res.status(401).json({ message: "Invalid Admin Credentials" }); 
+        }
+    } catch (err) {
+        console.error("Admin Signin error:", err);
         return res.status(500).json({ message: "Login Error: Internal Server Failure." });
     }
 });
 
 // =====================================
-// 🟢 USER ORDER APIs (orders table)
+// USER ORDER APIs (orders table) - (Unchanged)
 // =====================================
+// ... (Your Order APIs remain here) ...
 
 // Add New Order (CREATE) - /api/orders
 app.post("/api/orders", async (req, res) => {
@@ -180,7 +205,6 @@ app.post("/api/orders", async (req, res) => {
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
-    // Values map to: (product_id, user_name, phone, product_name, product_url, description, price, address, payment_method)
     const values = [product_id, user_name, phone_number, product_name, product_image_url, product_description, product_price, address, payment_method];
 
     try {
@@ -204,7 +228,7 @@ app.get("/api/orders", async (req, res) => {
     }
 });
 
-// ✍️ UPDATE Order by ID (EDIT) - /api/orders/:id
+// UPDATE Order by ID (EDIT) - /api/orders/:id
 app.put("/api/orders/:id", async (req, res) => {
     const orderId = req.params.id;
     const { user_name, phone_number, address, payment_method } = req.body;
@@ -226,7 +250,7 @@ app.put("/api/orders/:id", async (req, res) => {
     }
 });
 
-// 🗑️ DELETE Order by ID - /api/orders/:id
+// DELETE Order by ID - /api/orders/:id
 app.delete("/api/orders/:id", async (req, res) => {
     const orderId = req.params.id;
     const sql = "DELETE FROM orders WHERE id = ?";
