@@ -1,6 +1,7 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
-const cors = require = require("cors");
+// FIX 1: cors require statement को ठीक किया गया
+const cors = require("cors"); 
 
 const app = express();
 app.use(cors());
@@ -13,10 +14,10 @@ const db = mysql.createPool({ 
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME, // Assuming this is 'productdb'
     port: process.env.DATABASE_PORT,
-    // SSL Fix for TiDB Cloud latency
+    // SSL Fix for TiDB Cloud latency
     ssl: {  
         rejectUnauthorized: true,
-        minVersion: 'TLSv1.2' 
+        minVersion: 'TLSv1.2' 
     },
     waitForConnections: true,
     connectionLimit: 10,
@@ -41,7 +42,7 @@ async function startServer() {
     } catch (err) {
         console.error("❌ FATAL ERROR: Database connection failed. Server will not start.", err.message);
         console.error("DEBUG: Check Environment Variables and TiDB IP Access List.");
-        process.exit(1); 
+        process.exit(1); 
     }
 }
 startServer();
@@ -49,9 +50,8 @@ startServer();
 // ------------------ END OF DATABASE CONNECTION & SERVER START ------------------
 
 // ========================
-// PRODUCT APIs (dashboard table) - (Unchanged)
+// PRODUCT APIs (dashboard table)
 // ========================
-// ... (Your Product APIs remain here) ...
 
 // GET all products
 app.get("/products", async (req, res) => {
@@ -117,7 +117,7 @@ app.delete("/products/:id", async (req, res) => {
 // SIGNUP / SIGNIN APIs (singup table)
 // ========================
 
-// SIGNUP (Unchanged)
+// SIGNUP 
 app.post("/signup", async (req, res) => {
     const { name, email, phone, password, Confirm_Password } = req.body;
     if (password !== Confirm_Password) {
@@ -137,7 +137,7 @@ app.post("/signup", async (req, res) => {
     }
 });
 
-// SIGNIN (Old - Unchanged)
+// SIGNIN (Old)
 app.post("/signin", async (req, res) => {
     const { email, password } = req.body;
     const sql = "SELECT * FROM singup WHERE gmail = ? AND password = ?";
@@ -160,7 +160,7 @@ app.post("/signin", async (req, res) => {
 });
 
 // ========================
-// 🆕 NEW SIGNIN API (singin_admin table)
+// NEW SIGNIN API (singin_admin table)
 // ========================
 
 app.post("/signin-admin", async (req, res) => {
@@ -186,9 +186,8 @@ app.post("/signin-admin", async (req, res) => {
 });
 
 // =====================================
-// USER ORDER APIs (orders table) - (Unchanged)
+// USER ORDER APIs (orders table)
 // =====================================
-// ... (Your Order APIs remain here) ...
 
 // Add New Order (CREATE) - /api/orders
 app.post("/api/orders", async (req, res) => {
@@ -199,12 +198,14 @@ app.post("/api/orders", async (req, res) => {
         return res.status(400).json({ error: "Missing essential order details." });
     }
 
+    // FIX 2: .trim() जोड़ा गया ताकि SQL सिंटैक्स एरर (ER_PARSE_ERROR) ठीक हो जाए
     const sql = `
         INSERT INTO orders (
             product_id, user_name, phone, product_name, product_url, description, price, address, payment_method, order_date
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-    `;
+    `.trim(); 
+    
     const values = [product_id, user_name, phone_number, product_name, product_image_url, product_description, product_price, address, payment_method];
 
     try {
@@ -233,10 +234,11 @@ app.put("/api/orders/:id", async (req, res) => {
     const orderId = req.params.id;
     const { user_name, phone_number, address, payment_method } = req.body;
 
+    // FIX 3: .trim() जोड़ा गया ताकि SQL सिंटैक्स एरर (ER_PARSE_ERROR) ठीक हो जाए
     const sql = `
         UPDATE orders SET user_name = ?, phone = ?, address = ?, payment_method = ?
         WHERE id = ?
-    `;
+    `.trim();
     
     try {
         const [result] = await db.query(sql, [user_name, phone_number, address, payment_method, orderId]);
