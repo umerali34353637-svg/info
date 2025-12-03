@@ -13,8 +13,10 @@ const db = mysql.createPool({ 
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME, // Assuming this is 'productdb'
     port: process.env.DATABASE_PORT,
+    // 👇 यहाँ FIX किया गया है: SSL को स्थिर करने के लिए minVersion जोड़ा गया
     ssl: {  
-        rejectUnauthorized: true  
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2' 
     },
     waitForConnections: true,
     connectionLimit: 10,
@@ -47,8 +49,7 @@ startServer(); // सर्वर शुरू करें
 // ------------------ END OF DATABASE CONNECTION & SERVER START ------------------
 
 // ========================
-// PRODUCT APIs (dashboard table) - All async/await
-// (No changes needed in Product APIs)
+// PRODUCT APIs (dashboard table)
 // ========================
 
 // GET all products
@@ -151,8 +152,7 @@ app.post("/signin", async (req, res) => {
             });
         } else {
             // Login Failed (Invalid credentials)
-            // 401 Unauthorised ज़्यादा सही HTTP स्टेटस है
-            res.status(401).json({ message: "Invalid email or password" }); 
+            res.status(401).json({ message: "Invalid email or password" }); 
         }
     } catch (err) {
         console.error("Signin error:", err);
@@ -163,7 +163,6 @@ app.post("/signin", async (req, res) => {
 
 // =====================================
 // 🟢 USER ORDER APIs (orders table)
-// (No changes needed in Order APIs)
 // =====================================
 
 // Add New Order (CREATE) - /api/orders
